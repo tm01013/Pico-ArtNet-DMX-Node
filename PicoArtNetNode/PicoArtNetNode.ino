@@ -27,14 +27,14 @@
 #include "OLED.h"
 
 // Configure outputs
-#define OUTPUT_A_UNIVERSE 1 // Which universe maps to output A
-#define OUTPUT_B_UNIVERSE 2 // Which universe maps to output B
+#define OUTPUT_A_UNIVERSE 0 // Which universe maps to output A
+#define OUTPUT_B_UNIVERSE 1 // Which universe maps to output B
 #define OUTPUT_A_GPIO 0
 #define OUTPUT_B_GPIO 1
 
 // Configure WiFi
-const char* SSID = "your-wifi-ssid";
-const char* PASSWORD = "your-wifi-password";
+const char* SSID = "ArtNet";
+const char* PASSWORD = "test123456789";
 
 // Create a universe
 #define UNIVERSE_LENGTH 512
@@ -58,7 +58,16 @@ bool connectToWifi(void)
   // Connect to WiFi  
   oled.displayWifiConnecting();
   Serial.print("Connecting");
-  WiFi.begin(SSID, PASSWORD);
+
+  // These ip's are not random! Dont toutch them!
+  // Geteway must be 192.168.4.1
+  // Subnet to be 255.255.255.0
+  IPAddress local_ip(192,168,4,2);
+  IPAddress gateway_ip(192,168,4,1);
+  IPAddress subnet(255,255,255,0);
+  WiFi.softAPConfig(local_ip, gateway_ip, subnet);
+  WiFi.setHostname("pi");
+  WiFi.softAP(SSID, PASSWORD, 1,0,10);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(250);
@@ -76,6 +85,10 @@ bool connectToWifi(void)
     Serial.println(SSID);
     Serial.print("IP: ");
     Serial.println(IPAddress(WiFi.localIP()));
+    Serial.print("AP IP: ");
+    Serial.println(IPAddress(WiFi.softAPIP()));
+    Serial.print("SUBNET: ");
+    Serial.println(IPAddress(WiFi.subnetMask()));
     oled.displayWifiConnected(WiFi.localIP().toString().c_str());
   } else {
     Serial.println("WiFi Connection Failed");

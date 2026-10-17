@@ -18,7 +18,9 @@
     - Adafruit GFX Library (Tested with 1.11.9)
     - Adafruit BusIO (Tested with 1.14.5)
 
-  Created 10/18/2023 by Taylor Mingos
+  Original created 10/18/2023 by Taylor Mingos
+
+  Custom modifications by TM.
 */
 
 #include <Arduino.h>
@@ -34,7 +36,7 @@
 
 // Configure WiFi
 const char* SSID = "ArtNet";
-const char* PASSWORD = "test123456789";
+const char* PASSWORD = "qizk7486";
 
 // Create a universe
 #define UNIVERSE_LENGTH 512
@@ -47,19 +49,19 @@ ArtnetWifi artnet;
 DmxOutput dmx[2];
 
 // Init OLED display for displaying WiFi status and configuration info
-OLED oled(display, OUTPUT_A_UNIVERSE, OUTPUT_B_UNIVERSE, SSID);
+OLED oled(display, OUTPUT_A_UNIVERSE, OUTPUT_B_UNIVERSE);
 
-// Connect to Wifi
-bool connectToWifi(void)
+bool createAP(void)
 {
   bool connected = true;
   int attempts = 0;
 
-  // Connect to WiFi  
-  oled.displayWifiConnecting();
+  oled.displayWifiConnecting(SSID, nullptr);
   Serial.print("Connecting");
 
-  // These ip's are not random! Dont toutch them!
+  // Create Aaccess Point
+
+  // These ip's are not random! Dont touch them!
   // Geteway must be 192.168.4.1
   // Subnet to be 255.255.255.0
   IPAddress local_ip(192,168,4,2);
@@ -81,22 +83,99 @@ bool connectToWifi(void)
 
   // Display WiFi connection result
   if (connected) {
+    print_wifi_details();
+    oled.displayConnected(SSID, WiFi.localIP().toString().c_str(), PASSWORD);
+  } else {
+    Serial.println("WiFi Connection Failed");
+    oled.displayWifiError();
+    delay(5000);
+  }
+  
+  return connected;
+}
+
+// Connect to Wifi
+bool connectToWifi(String ssid, String password, int max_attempts)
+{
+  bool connected = true;
+  int attempts = 0;
+ 
+  // Connect to Wifi
+  oled.displayWifiConnecting(ssid.c_str(), password.c_str());
+  //Serial.print("Connecting");
+  WiFi.begin(ssid.c_str(), password.c_str());
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(250);
+    Serial.print("#");
+    if (attempts > max_attempts){
+      connected = false;
+      break;
+    }
+    attempts++;
+  }
+
+  // Display WiFi connection result
+  if (connected) {
+    print_wifi_details();
+    oled.displayConnected(ssid.c_str(), WiFi.localIP().toString().c_str());
+  } else {
+    //Serial.println("WiFi Connection Failed");
+    //oled.displayWifiError();
+    //delay(3000);
+  }
+  
+  return connected;
+}
+
+bool searchWifi() {
+  int attempts = 0;
+  const int max_attempts = 10;
+
+  bool is_connected = false;
+
+  Serial.println("Searching for networks...");
+  oled.displaySearching();
+
+  while (attempts < max_attempts && !is_connected) {
+    int numNetworks = WiFi.scanNetworks();
+
+    if (numNetworks == -1) {
+      continue;
+    }
+
+    for (int i = 0; i < numNetworks; i++) {
+      String ssid = WiFi.SSID(i);
+
+      is_connected = connectToWifi(ssid.c_str(), PASSWORD, 2);
+
+      if (is_connected) {
+        return true;
+      }
+
+      oled.displaySearching();
+    }
+
+    attempts++;
+    Serial.print(".");
+    delay(500);
+  }
+
+  oled.displayWifiError();
+  while (true) {} // get stuck
+}
+
+void print_wifi_details(void) {
     Serial.print("Connected to ");
     Serial.println(SSID);
     Serial.print("IP: ");
     Serial.println(IPAddress(WiFi.localIP()));
     Serial.print("AP IP: ");
     Serial.println(IPAddress(WiFi.softAPIP()));
+    Serial.print("GATEWAY: ");
+    Serial.println(IPAddress(WiFi.gatewayIP()));
     Serial.print("SUBNET: ");
     Serial.println(IPAddress(WiFi.subnetMask()));
-    oled.displayWifiConnected(WiFi.localIP().toString().c_str());
-  } else {
-    Serial.println("WiFi Connection Failed");
-    oled.displayWifiError();
-    delay(3000);
-  }
-  
-  return connected;
 }
 
 void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
@@ -145,6 +224,9 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
+  pinMode(D13, INPUT_PULLDOWN);
+  delay(250); // Wait is needed otherwise the button press later wont be registered becouse code is so fast.
+
   // Start the DMX outputs
   dmx[0].begin(OUTPUT_A_GPIO);
   dmx[1].begin(OUTPUT_B_GPIO);
@@ -155,8 +237,19 @@ void setup()
     channels[i] = 0;
   }
 
-  // Connect to WiFi
-  while(!connectToWifi()) { }
+  WiFi.setTimeout(1500);
+
+  // Check if settings button is pressed
+  int buttonState = digitalRead(D13);
+  if (buttonState == HIGH) {
+    while(!searchWifi()) {}
+  }
+  else {
+    // Create AP
+    while(!createAP()) {}
+  }
+
+  //while (!createAP()) {}
   
   // This will be called for each packet received
   artnet.setArtDmxCallback(onDmxFrame);

@@ -163,13 +163,13 @@ class OLED {
       displayRef.display();
     }
 
-    /*void displaySettingsMode(const char* ssid, const char* password, const char* url_address) {
+    void displaySettingsMode(const char* ssid, const char* password, const char* url_address) {
       displayRef.clearDisplay();
       _drawIcon(cog_bmp);
 
       _displayNetworkInfo(ssid, url_address, password);
       displayRef.display();
-    }*/
+    }
 };
 
 

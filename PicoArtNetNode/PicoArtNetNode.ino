@@ -1,15 +1,7 @@
 /*
-  PicoArtNetNode.ino
+  Original created 10/18/2023 by Taylor Mingos
+  Custom modifications by 2026 TM.
 
-  An Art-Net DMX node running on the Raspberry Pi Pico W. This device converts wireless Art-Net DMX packets into wired DMX512 ouputs.
-
-  It uses the PIOs on the Pico's RP2040 to implement the DMX protocol.
-
-  This node has two DMX outputs (A and B) each supporting a separate universe (configurable).
-
-  The device has an OLED screen (128x64) for visual debugging. It displays WiFi connection status 
-  and some configuration settings. See: OLED.h. This code runs whether or not an OLED display is 
-  connected.
 
   Dependencies:
     - ArtnetWifi by Nathanaël Lécaudé, Stephan Ruloff (Tested with 1.5.1)
@@ -18,9 +10,7 @@
     - Adafruit GFX Library (Tested with 1.11.9)
     - Adafruit BusIO (Tested with 1.14.5)
 
-  Original created 10/18/2023 by Taylor Mingos
 
-  Custom modifications by TM.
 */
 // WiFi is WiFiNINA under the hood
 
@@ -213,15 +203,13 @@ void webSetup() {
   Serial.println("SSID: " + ssid);
   Serial.println("Password: " + passw);
 
-  //WiFi.scanDelete();
-  //WiFi.scanNetworks();
   delay(500);
 
   bool connected = connectToWifi(ssid.c_str(), passw.c_str(), 5, 500);  // seems to be unreliable
   if (!connected) {
     // So if first try failed: try searching:
     searchWifi(ssid.c_str(), passw.c_str());  // appears to be working reliably this time
-    // No clue why this happens, yust that it works
+    // No clue why this happens, just that it works
 
     //oled.displayWifiError();
     //while (true) {}  // get stuck
@@ -244,7 +232,7 @@ void print_wifi_details(String ssid) {
 }
 
 void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data) {
-  /*Serial.print("DMX: Univ: ");
+  /*Serial.print("DMX: Univ: "); // NOTE: print statements impact preformance !
   Serial.print(universe, DEC);
   Serial.print(", Data Length: ");
   Serial.print(length, DEC);
@@ -304,13 +292,6 @@ void setup() {
   if (buttonState == HIGH) {
     //while(!searchWifi()) {}
     webSetup();
-
-    // TMP:
-    /*bool connected = connectToWifi("Collage3248", "IG!U*p16G%3^F5Yf", 5, 2500);
-    if (!connected) {
-      oled.displayWifiError();
-      while (true) {}  // get stuck
-    }*/
   } else {
     // Create AP
     while (!createAP()) {}

@@ -105,6 +105,8 @@ public:
   void run() {
     // Excpected to run in a loop
 
+    // https://docs.arduino.cc/tutorials/communication/wifi-nina-examples/#wifinina-ap-simple-web-server
+    
     WiFiClient client = server.available();  // listen for incoming clients
 
     if (client) {  // if you get a client,

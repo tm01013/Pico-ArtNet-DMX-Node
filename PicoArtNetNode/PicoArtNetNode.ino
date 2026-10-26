@@ -1,16 +1,6 @@
 /*
   Original created 10/18/2023 by Taylor Mingos
   Custom modifications by 2026 TM.
-
-
-  Dependencies:
-    - ArtnetWifi by Nathanaël Lécaudé, Stephan Ruloff (Tested with 1.5.1)
-    - Pico-DMX by Jostein (Tested with 3.1.0)
-    - Adafruit SSD1306 (Tested with 2.5.7)
-    - Adafruit GFX Library (Tested with 1.11.9)
-    - Adafruit BusIO (Tested with 1.14.5)
-
-
 */
 // WiFi is WiFiNINA under the hood
 

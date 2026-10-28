@@ -65,7 +65,7 @@ bool createAP(void) {
   // Display WiFi connection result
   if (connected) {
     print_wifi_details(SSID);
-    oled.displayConnected(SSID, WiFi.localIP().toString().c_str(), PASSWORD);
+    oled.displayConnected(SSID, WiFi.softAPIP().toString().c_str(), PASSWORD);
   } else {
     Serial.println("WiFi Connection Failed");
     oled.displayWifiError();

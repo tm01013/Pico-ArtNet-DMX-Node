@@ -106,7 +106,7 @@ public:
     // Excpected to run in a loop
 
     // https://docs.arduino.cc/tutorials/communication/wifi-nina-examples/#wifinina-ap-simple-web-server
-    
+
     WiFiClient client = server.available();  // listen for incoming clients
 
     if (client) {  // if you get a client,
@@ -148,6 +148,8 @@ public:
               client.print("      <input type='text' id='passw' name='passw' style='width: 100%' /><br/>");
               client.print("      <br/>");
               client.print("      <input type='submit' value='Connect' style='margin: auto; display: flex' />");
+              client.print("      <br />");
+              client.print("      <a href='https://github.com/tm01013/Pico-ArtNet-DMX-Node'>Source code</a>");
               client.print("    </form>");
               client.print("  </div>");
               client.print("</div>");

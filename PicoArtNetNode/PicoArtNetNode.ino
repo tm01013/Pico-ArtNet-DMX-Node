@@ -5,7 +5,7 @@
 // WiFi is WiFiNINA under the hood
 
 #include <Arduino.h>
-#include <ArtnetWifi.h>
+#include "ArtnetWifi.h"
 #include <DmxOutput.h>
 #include "OLED.h"
 #include "PicoWebServer.h"
@@ -19,10 +19,12 @@
 // Configure WiFi
 const char* SSID = "ArtNet";
 const char* PASSWORD = "qizk7486";
+arduino::IPAddress selfIp;
 
 // Create a universe
 #define UNIVERSE_LENGTH 512
-uint8_t channels[UNIVERSE_LENGTH + 1];
+uint8_t channels_A[UNIVERSE_LENGTH + 1];
+uint8_t channels_B[UNIVERSE_LENGTH + 1];
 
 // Init Art-Net
 ArtnetWifi artnet;
@@ -66,6 +68,11 @@ bool createAP(void) {
   if (connected) {
     print_wifi_details(SSID);
     oled.displayConnected(SSID, WiFi.softAPIP().toString().c_str(), PASSWORD);
+
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    artnet.setSelfIp(WiFi.softAPIP(), mac);
+  
   } else {
     Serial.println("WiFi Connection Failed");
     oled.displayWifiError();
@@ -99,6 +106,10 @@ bool connectToWifi(const char* ssid, const char* password, int max_attempts, int
   if (connected) {
     print_wifi_details(ssid);
     oled.displayConnected(ssid, WiFi.localIP().toString().c_str());
+
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    artnet.setSelfIp(WiFi.localIP(), mac);
   } else {
     //Serial.println("WiFi Connection Failed");
     //oled.displayWifiError();
@@ -178,11 +189,11 @@ void webSetup() {
     }
   }
 
-  server.end(); // stop web server
-  WiFi.end(); // End AP
-  delay(1000); // AP is practicly async so wait a little
+  server.end();  // stop web server
+  WiFi.end();    // End AP
+  delay(1000);   // AP is practicly async so wait a little
 
-  unsigned long start = millis(); // if it's still active wait further
+  unsigned long start = millis();  // if it's still active wait further
   while (WiFi.status() == WL_AP_LISTENING && millis() - start < 3000) {
     delay(100);
   }
@@ -230,25 +241,51 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
   Serial.print(sequence, DEC);
   Serial.print(", Data: ");*/
 
-  for (int i = 0; i < length; i++) {
-    /*if (i < 16) {
-      Serial.print(data[i], DEC);
-      Serial.print(" ");
-    }*/
-    channels[i + 1] = data[i];
-  }
+  // for (int i = 0; i < length; i++) {
+  //   /*if (i < 16) {
+  //     Serial.print(data[i], DEC);
+  //     Serial.print(" ");
+  //   }*/
+  //   channels[i + 1] = data[i];
+  // }
+
+  readIntoUniverse(universe, length, data);
 
   //Serial.println();
 
-  // Send out the universe if it's a universe we care about
-  if (universe == OUTPUT_A_UNIVERSE) {
-    dmx[0].write(channels, UNIVERSE_LENGTH);
-  } else if (universe == OUTPUT_B_UNIVERSE) {
-    dmx[1].write(channels, UNIVERSE_LENGTH);
-  }
+  sendDmxFrame(universe);
+
+  // // Send out the universe if it's a universe we care about
+  // if (universe == OUTPUT_A_UNIVERSE) {
+  //   dmx[0].write(channels, UNIVERSE_LENGTH);
+  // } else if (universe == OUTPUT_B_UNIVERSE) {
+  //   dmx[1].write(channels, UNIVERSE_LENGTH);
+  // }
 
   while (dmx[0].busy() || dmx[1].busy()) {
     // Do nothing while the DMX frame transmits
+  }
+}
+
+void readIntoUniverse(uint16_t universe, uint16_t length, uint8_t* data) {
+  if (universe == OUTPUT_A_UNIVERSE) {
+    for (int i = 0; i < length; i++) {
+      channels_A[i + 1] = data[i];
+    }
+  } else if (universe == OUTPUT_B_UNIVERSE) {
+    for (int i = 0; i < length; i++) {
+      channels_B[i + 1] = data[i];
+    }
+  }
+}
+
+void sendDmxFrame(uint16_t universe) {
+  if (!(dmx[0].busy() || dmx[1].busy())) {
+    if (universe == OUTPUT_A_UNIVERSE) {
+      dmx[0].write(channels_A, UNIVERSE_LENGTH);
+    } else if (universe == OUTPUT_B_UNIVERSE) {
+      dmx[1].write(channels_B, UNIVERSE_LENGTH);
+    }
   }
 }
 
@@ -272,7 +309,8 @@ void setup() {
 
   // Set all channels to zero
   for (int i = 1; i < UNIVERSE_LENGTH + 1; i++) {
-    channels[i] = 0;
+    channels_A[i] = 0;
+    channels_B[i] = 0;
   }
 
   WiFi.setTimeout(2500);
@@ -291,7 +329,7 @@ void setup() {
 
   // This will be called for each packet received
   artnet.setArtDmxCallback(onDmxFrame);
-  artnet.begin();
+  artnet.begin("", "DOBOZ", "Varazslatos teglatest", 2);
 }
 
 void loop() {

@@ -49,10 +49,10 @@ Az egész magja egy Raspberry Pi Pico 2W. Ez azért jó választás mert kellőe
 A jelátalakítók fogadásra is képesek, de az én esetemben ez felesleges.
 A jövőben lehet hogy fejlesztem hogy fogadni is tudjon pl egy kisebb konzoltól, azt rögzítse/visszajáttsza, vagy az art-net és a konzol jelét eggyesítse...
 
-A kütyühöz egy kis kijelző is tartozik amely főleg Wifi információkat jelenít meg: Hálózat nevét, jelszavát (ha sajátját hoztaa létre), és IP címét.
+A kütyühöz egy kis kijelző is tartozik amely főleg Wifi információkat jelenít meg: Hálózat nevét, jelszavát (ha sajátját hozta létre), és IP címét.
 A kijelzőn ikonok is megjelennek az adott üzemmódtól föggően. Valamint az univerzum konfigurációt is kiírja (melyik univerzum melyik ajzat).
 
-Nem utolsó sorban egy gomb, mely jelenleg az egyéni konfigurációs módhoz van felhasználva. Hogy a gomb jele he lebegjen szabadon egy 10k-s lehúzó ellenállást kellett hozzáadni.
+Nem utolsó sorban egy gomb, mely jelenleg az egyéni konfigurációs módhoz van felhasználva. Hogy a gomb jele ne lebegjen szabadon egy 10k-s lehúzó ellenállást kellett hozzáadni.
 
 ### Szoftver használata
 
@@ -64,14 +64,22 @@ Bekapcsolás után egyből un. _Elérési pont_ módba vált, ezt egy adótorony
 Ekkor a pico saját wifi hálózatot hoz létre (a kódban meghatározott névvel és jelszóval), ezek az adatok a kijelzőn is megjelennek (semmit se kell megjegyezni!). <br>
 Ez után csak fel kell catlakozni erre a hálózatra a show megkezdéséhez.
 
+A hálózatra csatlakoztatott kontrollereket a pico autómatikusan felismeri, ekkor a kontroller neve megjelenik a kijelzőn egy link ikonnal együtt. Ha a kontrollerrel elveszik a kapcsolat azt egy áthúzott link ikon jelzi.
+
+> Egy kontroller _"felismerése"_ nem jelent adatátvitelt.
+
+A kimemeti portokon az adattovábbítást villogó / folyamatosan világító led jelzi a jelátalakítókon.
+
+>  A jelátalakítók felépítése modelltől függ, nem feltétlenül jelzi az adatküldést
+
 <br>
 
-Ha bekapcsolás közben nyomva tartjuk a gombot, akkor u. _Egyéni beállítás_ módba vált. Ezt fogaskerék ikon jelzi.
+Ha bekapcsolás közben nyomva tartjuk a gombot, akkor un. _Egyéni beállítás_ módba vált. Ezt fogaskerék ikon jelzi.
 
 > lenyomjuk a gombot mielőtt bedugnánk, és addig nem engedjük el míg a kijelzőn adatok nem jelennek meg
 
 A pico ekkor is először létrehozza saját hálózatát, majd a hálózatra csatlakozás után nyissuk meg a kijelzőn látható oldalt, hogy eljussunk a beállítási menübe. <br>
-Jelenleg ez csak arra ad lehetőséget hogy a pico-t egy általunk választottmár meglévő hálózatra csatlakoztassuk.
+Jelenleg ez csak arra ad lehetőséget hogy a pico-t egy általunk választott, már meglévő hálózatra csatlakoztassuk.
 
 > ! A pico-nak csak 2.4GHz-es antennája van. Ne felejtsük el bekapcsolni ezt a sávot routerünkön!
 
@@ -135,7 +143,8 @@ Az arduino ide alapból nem tudja a pico 2W-t programozni, ezért extra alaplapk
 
 #### Könyvtárak
 
-- [`ArtnetWifi`](https://github.com/rstephan/ArtnetWifi/tree/master) (1.6.2)
+- _[`ArtnetWifi`](https://github.com/rstephan/ArtnetWifi/tree/master) (1.6.2)_
+  > A kód egy egyedileg módosított verziót használ, látsd: [kód](./PicoArtNetNode/ArtnetWifi.h)
 - [`Pico-DMX`](https://github.com/jostlowe/Pico-DMX) (3.1.0)
 - A kijelzőhöz:
   - `Adafruit SSD1306` 2.5.17
@@ -149,6 +158,12 @@ Az arduino ide alapból nem tudja a pico 2W-t programozni, ezért extra alaplapk
 - [`OLED.h`](./PicoArtNetNode/OLED.h)
 - [`PicoWebServer.h`](./PicoArtNetNode/PicoWebServer.h)
   > Webszerver a webes beállítási módhoz
+- ArtnetWifi
+  > Az ArtnetWifi könyvtár egyedileg módosított, kiegészített változata
+  - [`ArtnetWifi.h`](./PicoArtNetNode/ArtnetWifi.h)
+  - [`ArtnetWifi.cpp`](./PicoArtNetNode/ArtnetWifi.cpp)
+- [`ArtnetPackets.h`](./PicoArtNetNode/ArtnetPackets.h)
+  > Segéd objektumok a standard Artnet csomagokhoz
 
 ---
 

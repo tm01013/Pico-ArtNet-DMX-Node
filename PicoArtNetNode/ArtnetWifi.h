@@ -6,6 +6,9 @@ https://github.com/natcl/Artnet, http://forum.pjrc.com/threads/24688-Artnet-to-O
 Copyright (c) 2016,2019 Stephan Ruloff
 https://github.com/rstephan
 
+Copyright (c) 2026 Márton Tatár
+https://github.com/tm01013/Pico-ArtNet-DMX-Node 
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -52,6 +55,7 @@ THE SOFTWARE.
 #endif
 #include <WiFiUdp.h>
 
+
 // UDP specific
 #define ART_NET_PORT 6454
 // Opcodes
@@ -72,6 +76,8 @@ THE SOFTWARE.
 #define OUTPUT_TYPE_PORT_ON_PATTERN 0b01110000   // dmx
 #define OUTPUT_TYPE_PORT_OFF_PATTERN 0b00000000  // no port
 
+#include "ArtnetPackets.h"
+
 #define DMX_FUNC_PARAM uint16_t universe, uint16_t length, uint8_t sequence, uint8_t *data
 #if !defined(ARDUINO_AVR_UNO_WIFI_REV2)
 typedef std::function<void(DMX_FUNC_PARAM)> StdFuncDmx_t;
@@ -83,6 +89,7 @@ public:
 
   void begin(String hostname = "", const char* nameShort = "PicoNode", const char* nameLong = "Pico2W ArtNet-Node", uint16_t numberOfPorts = 1);
   uint16_t read();
+  void pollOtherNodes();
   /* returns 1 for Ok, or 0 on problem */
   int write(void);
   int write(IPAddress ip);
@@ -137,6 +144,9 @@ public:
   inline void setArtDmxCallback(void (*fptr)(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)) {
     artDmxCallback = fptr;
   }
+  inline void setArtPollReplyCallback(void (*fptr)(ArtPollReply reply)) {
+    artPollReplyCallback = fptr;
+  }
 
 #if !defined(ARDUINO_AVR_UNO_WIFI_REV2)
   inline void setArtDmxFunc(StdFuncDmx_t func) {
@@ -155,7 +165,7 @@ private:
   WiFiUDP Udp;
   String host;
   arduino::IPAddress selfIp;
-  uint8_t macAddr[6] = {0, 0, 0, 0, 0, 0};
+  uint8_t macAddr[6] = { 0, 0, 0, 0, 0, 0 };
   char shortName[18] = "PicoNode";
   char longName[64] = "Pico2W ArtNet-Node";
   uint16_t portCount;
@@ -169,6 +179,7 @@ private:
   uint16_t outgoingUniverse;
   uint16_t dmxDataLength;
   void (*artDmxCallback)(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data);
+  void (*artPollReplyCallback)(ArtPollReply reply);
 #if !defined(ARDUINO_AVR_UNO_WIFI_REV2)
   StdFuncDmx_t artDmxFunc;
 #endif

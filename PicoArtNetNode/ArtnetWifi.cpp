@@ -6,6 +6,9 @@ https://github.com/natcl/Artnet, http://forum.pjrc.com/threads/24688-Artnet-to-O
 Copyright (c) 2016,2019 Stephan Ruloff
 https://github.com/rstephan
 
+Copyright (c) 2026 Márton Tatár
+https://github.com/tm01013/Pico-ArtNet-DMX-Node
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -97,8 +100,12 @@ uint16_t ArtnetWifi::read() {
 
       return ART_POLL;
     }
-    if (opcode == ART_SYNC) {
-      return ART_SYNC;
+    if (opcode == ART_POLL_REPLY) {
+      ArtPollReply reply = ArtPollReply::deserializeFromBuffer(artnetPacket);
+
+      (*artPollReplyCallback)(reply);
+
+      return ART_POLL_REPLY;
     }
   }
 
@@ -106,6 +113,47 @@ uint16_t ArtnetWifi::read() {
 }
 
 void ArtnetWifi::pollReply(arduino::IPAddress ip) {
+  ArtPollReply reply;
+
+  uint32_t selfip_int = (uint32_t)selfIp;
+  // selfip_int is low byte first. eg 191.168.4.1 -> 1 4 168 192
+
+  reply.ip[0] = selfip_int;
+  reply.ip[1] = selfip_int >> 8;
+  reply.ip[2] = selfip_int >> 16;
+  reply.ip[3] = selfip_int >> 24;
+
+  memcpy(&reply.shortName, shortName, strlen(shortName));
+
+  memcpy(&reply.longName, longName, strlen(longName));
+
+  reply.portCount = portCount;
+
+  // Port types
+  reply.portTypes[0] = portCount >= 1 ? PORT_ON_PATTERN : PORT_OFF_PATTERN;
+  reply.portTypes[1] = portCount >= 2 ? PORT_ON_PATTERN : PORT_OFF_PATTERN;
+  reply.portTypes[2] = portCount >= 3 ? PORT_ON_PATTERN : PORT_OFF_PATTERN;
+  reply.portTypes[3] = portCount >= 4 ? PORT_ON_PATTERN : PORT_OFF_PATTERN;
+
+  // Port input fromat
+  reply.allowedInputTypes[0] = portCount >= 1 ? OUTPUT_TYPE_PORT_ON_PATTERN : OUTPUT_TYPE_PORT_OFF_PATTERN;
+  reply.allowedInputTypes[1] = portCount >= 2 ? OUTPUT_TYPE_PORT_ON_PATTERN : OUTPUT_TYPE_PORT_OFF_PATTERN;
+  reply.allowedInputTypes[2] = portCount >= 3 ? OUTPUT_TYPE_PORT_ON_PATTERN : OUTPUT_TYPE_PORT_OFF_PATTERN;
+  reply.allowedInputTypes[3] = portCount >= 4 ? OUTPUT_TYPE_PORT_ON_PATTERN : OUTPUT_TYPE_PORT_OFF_PATTERN;
+
+  // Input universe config
+  reply.outputPortUniverseBindings[0] = portCount >= 1 ? 0 : 0;  // Univ 0
+  reply.outputPortUniverseBindings[1] = portCount >= 2 ? 1 : 0;
+  reply.outputPortUniverseBindings[2] = portCount >= 3 ? 2 : 0;
+  reply.outputPortUniverseBindings[3] = portCount >= 4 ? 3 : 0;  // Univ 4
+
+  // MAC address
+  memcpy(reply.macAddr, macAddr, sizeof(macAddr));
+
+  reply.serializeIntoBuffer(pollReplyBuffer); 
+
+  /*
+
   memset(pollReplyBuffer, 0, POLL_PACKET_SIZE);
 
   memcpy(pollReplyBuffer, artnetId, sizeof(artnetId));  // 0-7
@@ -115,8 +163,9 @@ void ArtnetWifi::pollReply(arduino::IPAddress ip) {
   pollReplyBuffer[9] = opcode >> 8;  // 9 H
 
   uint32_t selfip_int = (uint32_t)selfIp;
+  // selfip_int is low byte first. eg 191.168.4.1 -> 1 4 168 192
 
-  pollReplyBuffer[10] = selfip_int;  // L
+  pollReplyBuffer[10] = selfip_int;  // H
   pollReplyBuffer[11] = selfip_int >> 8;
   pollReplyBuffer[12] = selfip_int >> 16;
   pollReplyBuffer[13] = selfip_int >> 24;  // L
@@ -179,10 +228,23 @@ void ArtnetWifi::pollReply(arduino::IPAddress ip) {
   pollReplyBuffer[205] = macAddr[4];
   pollReplyBuffer[206] = macAddr[5];  // L
 
+  */
+
   // Rest of the fields are left zero
 
   Udp.beginPacket(ip, ART_NET_PORT);
   Udp.write(pollReplyBuffer, POLL_PACKET_SIZE);
+  Udp.endPacket();
+}
+
+void ArtnetWifi::pollOtherNodes() {
+  uint8_t pollPacketBuffer[14] = {};
+
+  ArtPoll packet;
+  packet.serializeIntoBuffer(pollPacketBuffer);
+
+  Udp.beginPacket(IPAddress(255, 255, 255, 255), ART_NET_PORT);
+  Udp.write(pollPacketBuffer, 14);
   Udp.endPacket();
 }
 
